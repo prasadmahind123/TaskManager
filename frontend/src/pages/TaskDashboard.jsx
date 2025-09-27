@@ -9,6 +9,8 @@ import { TaskList } from "./TaskList"
 import { TaskStats } from "./TaskStats"
 import { UserProfile } from "./UseraProfile"
 import { CheckSquare, Plus, LogOut, User, Filter } from "lucide-react"
+import axios from "axios";
+import { getTasks, createTask, updateTask, deleteTask } from "../context/AppContext.jsx" // Adjust the import path as necessary
 
 export function TaskDashboard({ user, onLogout }) {
   const [tasks, setTasks] = useState([])
@@ -16,15 +18,24 @@ export function TaskDashboard({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false)
   const [filterStatus, setFilterStatus] = useState("all") // "all" | "todo" | "in-progress" | "completed"
   const [editingTask, setEditingTask] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Load tasks from localStorage
-    const savedTasks = localStorage.getItem("taskManager_tasks")
-    if (savedTasks) {
-      const allTasks = JSON.parse(savedTasks)
-      setTasks(allTasks.filter((task) => task.userId === user.id))
+    const fetchTasks = async () => {
+      try {
+        setLoading(true)
+        const data = await getTasks()
+        console.log("Fetched tasks:", data)
+        setTasks(data)
+      } catch (err) {
+        console.error("Error fetching tasks:", err)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [user.id])
+    fetchTasks()
+  }, [])
+
 
   const saveTasks = (updatedTasks) => {
     const allTasks = JSON.parse(localStorage.getItem("taskManager_tasks") || "[]")
@@ -34,119 +45,104 @@ export function TaskDashboard({ user, onLogout }) {
     setTasks(updatedTasks)
   }
 
-  const handleCreateTask = (taskData) => {
-    const newTask = {
-      ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      userId: user.id,
+  const handleCreateTask = async (taskData) => {
+    try {
+      const newTask = await createTask(taskData)
+      setTasks((prev) => [...prev, newTask])
+      setShowTaskForm(false)
+    } catch (err) {
+      console.error("Error creating task:", err)
     }
-    const updatedTasks = [...tasks, newTask]
-    saveTasks(updatedTasks)
-    setShowTaskForm(false)
   }
 
-  const handleUpdateTask = (taskData) => {
+
+  const handleUpdateTask = async (taskData) => {
     if (!editingTask) return
-    const updatedTask = { ...editingTask, ...taskData }
-    const updatedTasks = tasks.map((task) =>
-      task.id === editingTask.id ? updatedTask : task
-    )
-    saveTasks(updatedTasks)
-    setEditingTask(null)
-    setShowTaskForm(false)
+    try {
+      const updated = await updateTask(editingTask.id, taskData)
+      setTasks((prev) =>
+        prev.map((t) => (t.id === editingTask.id ? updated : t))
+      )
+      setEditingTask(null)
+      setShowTaskForm(false)
+    } catch (err) {
+      console.error("Error updating task:", err)
+    }
   }
 
-  const handleDeleteTask = (taskId) => {
-    const updatedTasks = tasks.filter((task) => task.id !== taskId)
-    saveTasks(updatedTasks)
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await deleteTask(taskId)
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
+    } catch (err) {
+      console.error("Error deleting task:", err)
+    }
   }
 
-  const handleStatusChange = (taskId, status) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, status } : task
-    )
-    saveTasks(updatedTasks)
+  const handleStatusChange = async (taskId, status) => {
+    try {
+      const task = tasks.find((t) => t.id === taskId)
+      const updated = await updateTask(taskId, { ...task, status })
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? updated : t))
+      )
+    } catch (err) {
+      console.error("Error updating status:", err)
+    }
   }
 
-  const filteredTasks =
-    filterStatus === "all"
-      ? tasks
-      : tasks.filter((task) => task.status === filterStatus)
+  const filteredTasks = tasks.filter(
+    (task) => filterStatus === "all" || task.status === filterStatus
+  )
 
-  const getInitials = (name) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
+  // const getInitials = (name) =>
+  //   name
+  //     .split(" ")
+  //     .map((n) => n[0])
+  //     .join("")
+  //     .toUpperCase()
 
   if (showProfile) {
-    return (
-      <UserProfile
-        user={user}
-        onBack={() => setShowProfile(false)}
-        onLogout={onLogout}
-      />
-    )
+    return <UserProfile user={user} onBack={() => setShowProfile(false)} onLogout={onLogout} />
   }
 
   return (
-    <div className="min-h-screen bg-background">
+   <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CheckSquare className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">TaskFlow</h1>
-                <p className="text-sm text-muted-foreground">
-                  Welcome back, {user.name}
-                </p>
-              </div>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">TaskFlow</h1>
+              <p className="text-sm text-muted-foreground">Welcome back, {user.name}</p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowProfile(true)}
-                className="flex items-center gap-2"
-              >
-                <User className="h-4 w-4" />
-                Profile
-              </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => setShowProfile(true)} className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Profile
+            </Button>
 
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(user.name)}
-                </AvatarFallback>
-              </Avatar>
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary text-primary-foreground">{(user.name)}</AvatarFallback>
+            </Avatar>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onLogout}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 gap-6">
-          {/* Stats Sidebar */}
           <div className="lg:col-span-1">
             <TaskStats tasks={tasks} />
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Actions Bar */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
@@ -177,13 +173,10 @@ export function TaskDashboard({ user, onLogout }) {
               </Button>
             </div>
 
-            {/* Task Form */}
             {showTaskForm && (
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {editingTask ? "Edit Task" : "Create New Task"}
-                  </CardTitle>
+                  <CardTitle>{editingTask ? "Edit Task" : "Create New Task"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TaskForm
@@ -198,7 +191,6 @@ export function TaskDashboard({ user, onLogout }) {
               </Card>
             )}
 
-            {/* Task List */}
             <TaskList
               tasks={filteredTasks}
               onEdit={(task) => {

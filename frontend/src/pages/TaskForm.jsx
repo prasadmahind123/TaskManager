@@ -13,6 +13,8 @@ export function TaskForm({ task, onSubmit, onCancel }) {
   const [priority, setPriority] = useState("medium");
   const [status, setStatus] = useState("todo");
   const [dueDate, setDueDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -24,20 +26,54 @@ export function TaskForm({ task, onSubmit, onCancel }) {
     }
   }, [task]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({
-      title,
-      description,
-      priority,
-      status,
-      dueDate,
-    });
+    setLoading(true);
+    setError("");
+
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      setError("User not authenticated");
+      setLoading(false);
+      return;
+    }
+
+    const taskData = { title, description, priority, status, dueDate };
+
+    try {
+      const url = task
+        ? `http://127.0.0.1:8000/api/tasks/${task.id}/`
+        : "http://127.0.0.1:8000/api/tasks/";
+
+      const method = task ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Something went wrong");
+      }
+
+      const result = await response.json();
+      onSubmit(result); // send updated/created task to parent
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Task Title */}
+      {error && <p className="text-red-600">{error}</p>}
+
       <div className="space-y-2">
         <Label htmlFor="title">Task Title</Label>
         <Input
@@ -45,11 +81,11 @@ export function TaskForm({ task, onSubmit, onCancel }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter task title"
+          name="title"
           required
         />
       </div>
 
-      {/* Task Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
@@ -57,15 +93,15 @@ export function TaskForm({ task, onSubmit, onCancel }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Enter task description"
+          name="description"
           rows={3}
         />
       </div>
 
-      {/* Priority, Status, Due Date */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="priority">Priority</Label>
-          <Select value={priority} onValueChange={(value) => setPriority(value)}>
+          <Select value={priority} onValueChange={(value) => setPriority(value)} name="priority">
             <SelectTrigger>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -79,7 +115,7 @@ export function TaskForm({ task, onSubmit, onCancel }) {
 
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
-          <Select value={status} onValueChange={(value) => setStatus(value)}>
+          <Select value={status} onValueChange={(value) => setStatus(value)} name="status">
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -98,21 +134,16 @@ export function TaskForm({ task, onSubmit, onCancel }) {
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            name="dueDate"
           />
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
-          {task ? "Update Task" : "Create Task"}
+        <Button type="submit" className="flex-1" disabled={loading}>
+          {loading ? "Saving..." : task ? "Update Task" : "Create Task"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          className="flex-1 bg-transparent"
-        >
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
           Cancel
         </Button>
       </div>

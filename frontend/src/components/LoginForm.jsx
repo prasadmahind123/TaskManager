@@ -7,36 +7,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Lock, LogIn } from "lucide-react"
+import { loginUser } from "../context/AppContext.jsx" // Adjust the import path as necessary
 
 export function LoginForm({ onLogin }) {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      // Check if user exists in localStorage
-      const users = JSON.parse(localStorage.getItem("taskManager_users") || "[]")
-      const user = users.find((u) => u.email === email && u.password === password)
-
-      if (user) {
-        onLogin({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        })
-      } else {
-        setError("Invalid email or password")
-      }
-      setLoading(false)
-    }, 1000)
-  }
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const data = await loginUser(username, password);
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+      setLoading(true);
+      onLogin(data.user);
+    } catch (err) {
+      setError("Invalid username or password" , err.message);
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -50,16 +40,17 @@ export function LoginForm({ onLogin }) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Username</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
-                type="email"
+                type="text"
                 placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="pl-10"
+                name ="username"
                 required
               />
             </div>
@@ -76,6 +67,7 @@ export function LoginForm({ onLogin }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
+                name="password"
                 required
               />
             </div>

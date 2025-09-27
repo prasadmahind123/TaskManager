@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Lock, UserIcon, UserPlus } from "lucide-react"
+import { registerUser } from "../context/AppContext.jsx" // Adjust the import path as necessary
 
 export function RegistrationForm({ onRegister }) {
   const [name, setName] = useState("")
@@ -18,50 +19,19 @@ export function RegistrationForm({ onRegister }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError("")
-
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       return
     }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
+    try {
+      const data = await registerUser(name, email, password);
+      localStorage.setItem("access_token", data.access)
+      localStorage.setItem("refresh_token", data.refresh)
+      setLoading(true);
+      onRegister(data.user)
+    } catch (err) {
+      setError("Registration failed. Please try again." , err.message);
     }
-
-    setLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      // Check if user already exists
-      const users = JSON.parse(localStorage.getItem("taskManager_users") || "[]")
-      const existingUser = users.find((u) => u.email === email)
-
-      if (existingUser) {
-        setError("User with this email already exists")
-        setLoading(false)
-        return
-      }
-
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
-        name,
-        email,
-        password,
-      }
-
-      users.push(newUser)
-      localStorage.setItem("taskManager_users", JSON.stringify(users))
-
-      onRegister({
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-      })
-      setLoading(false)
-    }, 1000)
   }
 
   return (
@@ -86,6 +56,7 @@ export function RegistrationForm({ onRegister }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="pl-10"
+                name="username"
                 required
               />
             </div>
@@ -102,6 +73,7 @@ export function RegistrationForm({ onRegister }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
+                name="email"
                 required
               />
             </div>
@@ -118,6 +90,7 @@ export function RegistrationForm({ onRegister }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
+                name="password"
                 required
               />
             </div>
@@ -134,6 +107,7 @@ export function RegistrationForm({ onRegister }) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="pl-10"
+                name="password2"
                 required
               />
             </div>
