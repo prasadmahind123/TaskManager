@@ -9,7 +9,6 @@ import { TaskList } from "./TaskList"
 import { TaskStats } from "./TaskStats"
 import { UserProfile } from "./UseraProfile"
 import { CheckSquare, Plus, LogOut, User, Filter } from "lucide-react"
-import axios from "axios";
 import { getTasks, createTask, updateTask, deleteTask } from "../context/AppContext.jsx" // Adjust the import path as necessary
 
 export function TaskDashboard({ user, onLogout }) {
@@ -95,12 +94,6 @@ export function TaskDashboard({ user, onLogout }) {
     (task) => filterStatus === "all" || task.status === filterStatus
   )
 
-  // const getInitials = (name) =>
-  //   name
-  //     .split(" ")
-  //     .map((n) => n[0])
-  //     .join("")
-  //     .toUpperCase()
 
   if (showProfile) {
     return <UserProfile user={user} onBack={() => setShowProfile(false)} onLogout={onLogout} />
@@ -115,7 +108,7 @@ export function TaskDashboard({ user, onLogout }) {
             <CheckSquare className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">TaskFlow</h1>
-              <p className="text-sm text-muted-foreground">Welcome back, {user.name}</p>
+              <p className="text-sm text-muted-foreground">Welcome back, {user.username}</p>
             </div>
           </div>
 
@@ -126,7 +119,7 @@ export function TaskDashboard({ user, onLogout }) {
             </Button>
 
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground">{(user.name)}</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">{(user.username.split(" ")[0][0])}</AvatarFallback>
             </Avatar>
 
             <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground">

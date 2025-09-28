@@ -122,13 +122,13 @@ export function TaskList({ tasks, onEdit, onDelete, onStatusChange }) {
                       {task.status.replace("-", " ")}
                     </Badge>
 
-                    {task.dueDate && (
+                    {task.due_date && (
                       <Badge
-                        variant={isOverdue(task.dueDate) ? "destructive" : "secondary"}
+                        variant={isOverdue(task.due_date) ? "destructive" : "secondary"}
                         className="flex items-center gap-1"
                       >
                         <Calendar className="h-3 w-3" />
-                        {formatDate(task.dueDate)}
+                        {formatDate(task.due_date)}
                       </Badge>
                     )}
                   </div>
@@ -164,7 +164,7 @@ export function TaskList({ tasks, onEdit, onDelete, onStatusChange }) {
               <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  Created {formatDate(task.createdAt)}
+                  Created {formatDate(task.created_at)}
                 </div>
               </div>
             </CardContent>

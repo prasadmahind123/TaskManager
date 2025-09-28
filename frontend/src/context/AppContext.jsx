@@ -1,7 +1,22 @@
 // src/api.js
 import axios from "axios";
 
+
 const API_URL = "http://127.0.0.1:8000/api/"; // Your Django backend
+let isRefreshing = false;
+
+export const refreshToken = async () => {
+  const refresh = localStorage.getItem("refresh_token");
+  if (!refresh) return null;
+  try {
+    const res = await axios.post(`${API_URL}auth/token/refresh/`, { refresh });
+    localStorage.setItem("access_token", res.data.access);
+    return res.data.access;
+  } catch (err) {
+    console.error("Refresh failed", err);
+    return null;
+  }
+};
 
 // Get JWT from localStorage
 const getToken = () => localStorage.getItem("access_token");
@@ -13,6 +28,23 @@ const axiosInstance = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const newAccess = await refreshToken();
+      if (newAccess) {
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        return axios(originalRequest); // retry the request
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 
 axiosInstance.interceptors.request.use(
   (config) => {

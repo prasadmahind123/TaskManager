@@ -12,7 +12,7 @@ export function TaskForm({ task, onSubmit, onCancel }) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [status, setStatus] = useState("todo");
-  const [dueDate, setDueDate] = useState("");
+  const [due_date, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,56 +22,70 @@ export function TaskForm({ task, onSubmit, onCancel }) {
       setDescription(task.description);
       setPriority(task.priority);
       setStatus(task.status);
-      setDueDate(task.dueDate);
+      setDueDate(task.due_date);
     }
   }, [task]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
-      setError("User not authenticated");
-      setLoading(false);
-      return;
-    }
+  // ✅ Get token
+  const accessToken = localStorage.getItem("access_token");
+  if (!accessToken) {
+    setError("User not authenticated");
+    setLoading(false);
+    return;
+  }
 
-    const taskData = { title, description, priority, status, dueDate };
-
-    try {
-      const url = task
-        ? `http://127.0.0.1:8000/api/tasks/${task.id}/`
-        : "http://127.0.0.1:8000/api/tasks/";
-
-      const method = task ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(taskData),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Something went wrong");
-      }
-
-      const result = await response.json();
-      onSubmit(result); // send updated/created task to parent
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  // ✅ Backend expects snake_case (due_date) to match your Django serializer
+  const taskData = {
+    title,
+    description,
+    priority,
+    status,
+    due_date
   };
 
+  try {
+    const url = task
+      ? `http://127.0.0.1:8000/api/tasks/${task.id}/`
+      : "http://127.0.0.1:8000/api/tasks/";
+
+    const method = task ? "PUT" : "POST";
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(taskData),
+    });
+    
+
+    // ✅ DRF will return 401 or 400 with JSON
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data.detail || JSON.stringify(data) || "Something went wrong"
+      );
+    }
+
+    // ✅ Pass the created/updated task to parent
+    onSubmit(data);
+  } catch (err) {
+    console.error("Task submit error:", err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" name = "task-list-create">
       {error && <p className="text-red-600">{error}</p>}
 
       <div className="space-y-2">
@@ -132,9 +146,9 @@ export function TaskForm({ task, onSubmit, onCancel }) {
           <Input
             id="dueDate"
             type="date"
-            value={dueDate}
+            value={due_date}
             onChange={(e) => setDueDate(e.target.value)}
-            name="dueDate"
+            name="due_date"
           />
         </div>
       </div>
