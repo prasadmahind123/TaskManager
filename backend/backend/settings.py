@@ -62,6 +62,8 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+ROOT_URLCONF = 'backend.urls'
+
 CORS_ALLOWED_ORIGINS = ['https://yourtaskmanager-39.vercel.app/'] 
 
 REST_FRAMEWORK = {
