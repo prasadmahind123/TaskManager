@@ -4,15 +4,15 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 # Create your models here.
 
 PRIORITY_CHOICES = [
-    ('Low', 'Low'),
-    ('Medium', 'Medium'),
-    ('High', 'High'),
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
 ]
 
 STATUS_CHOICES = [
-    ('To Do', 'To Do'),
-    ('In Progress', 'In Progress'),
-    ('Completed', 'Completed'),
+    ('todo', 'To Do'),
+    ('in-progress', 'In Progress'),
+    ('completed', 'Completed'),
 ]
 
 
