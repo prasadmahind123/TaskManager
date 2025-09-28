@@ -1,0 +1,11 @@
+asgiref==3.9.1
+Django==5.2.6
+sqlparse==0.5.3
+tzdata==2025.2
+
+# ➡️ Add these for deployment
+gunicorn==23.0.0        # WSGI server to run Django on Render
+dj-database-url==2.3.0  # Parse DATABASE_URL from Render
+psycopg2-binary==2.9.9  # PostgreSQL driver
+python-dotenv==1.0.1    # Optional: manage environment variables
+whitenoise==6.11.0    # Serve static files in production
