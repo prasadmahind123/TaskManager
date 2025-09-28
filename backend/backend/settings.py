@@ -29,7 +29,7 @@ DEBUG = True
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-ALLOWED_HOSTS = ['']
+ALLOWED_HOSTS = ['https://taskmanager-e4w4.onrender.com']
 
 
 # Application definition
@@ -62,7 +62,7 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOWED_ORIGINS = ['https://yourtaskmanager-39.vercel.app/'] 
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
